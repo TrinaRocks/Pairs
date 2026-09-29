@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Times Tables Pairs</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="theme-color" content="#4a8fe7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Tables Pairs">
+<style>
+  :root{
+    --bg: #eef6fb;
+    --panel: #ffffff;
+    --ink: #223;
+    --accent: #4a8fe7;
+    --accent-dark: #2f6fc4;
+    --good: #4caf7d;
+    --bad: #e2665a;
+    --card-bg: #ffffff;
+    --card-border: #cfe0f0;
+  }
+  *{ box-sizing: border-box; }
+  html, body{
+    height: 100%;
+  }
+  body{
+    margin:0;
+    font-family: 'Segoe UI', Verdana, Tahoma, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    height: 100dvh;
+    padding: 6px 10px;
+    overflow: hidden;
+  }
+  h1{
+    font-size: clamp(14px, 2.2vw, 18px);
+    margin: 0 0 4px;
+    text-align:center;
+    flex: 0 0 auto;
+  }
+
+  .panel{
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 5px 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    width: 100%;
+    max-width: 640px;
+    margin-bottom: 4px;
+    flex: 0 0 auto;
+  }
+  .panel h2{
+    font-size: 10px;
+    margin: 0 0 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #667;
+  }
+  .row{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 5px;
+  }
+  .choice-btn{
+    border: 1.5px solid var(--card-border);
+    background: #fbfdff;
+    border-radius: 7px;
+    padding: 4px 8px;
+    font-size: 12.5px;
+    cursor: pointer;
+    color: var(--ink);
+    transition: transform 0.08s ease, background 0.15s, border-color 0.15s;
+    user-select: none;
+  }
+  .choice-btn:hover{ transform: translateY(-1px); }
+  .choice-btn.selected{
+    background: var(--accent);
+    border-color: var(--accent-dark);
+    color: #fff;
+    font-weight: 600;
+  }
+  .table-btn{ min-width: 30px; text-align:center; }
+  .level-btn{ font-weight:600; }
+
+  .controls-bottom{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    width: 100%;
+    max-width: 640px;
+    margin-bottom: 4px;
+    flex: 0 0 auto;
+  }
+  #newGameBtn{
+    background: var(--good);
+    color:#fff;
+    border:none;
+    border-radius: 9px;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow: 0 3px 0 #3a8a63;
+  }
+  #newGameBtn:active{ transform: translateY(2px); box-shadow: 0 1px 0 #3a8a63; }
+  #status{
+    font-size: 13px;
+    font-weight: 600;
+  }
+  #hint{
+    color: var(--bad);
+    font-weight:600;
+    font-size: 12px;
+    min-height: 16px;
+  }
+
+  .board-wrap{
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    flex: 1 1 auto;
+    min-height: 0;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  }
+  .board-wrap img.reveal-img{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit: cover;
+    object-position: center;
+  }
+  .grid{
+    position:absolute;
+    inset:0;
+    display:grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(6, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+  }
+  .card{
+    background: var(--card-bg);
+    border: 2px solid var(--card-border);
+    border-radius: 8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    font-weight:700;
+    font-size: clamp(11px, 5vw, 30px);
+    padding: 2px;
+    cursor:pointer;
+    transition: opacity 0.35s ease, transform 0.35s ease, background 0.15s, border-color 0.15s;
+    line-height:1.15;
+    white-space: normal;
+    overflow-wrap: break-word;
+    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+  }
+  .card.q{ color: var(--accent-dark); }
+  .card.a{ color: #a05a2c; }
+  .card.selected{
+    background: #fff6d8;
+    border-color: #e8c94a;
+    transform: scale(1.05);
+  }
+  .card.wrong{
+    background: #ffe1de;
+    border-color: var(--bad);
+  }
+  .card.matched{
+    opacity: 0;
+    transform: scale(0.5);
+    pointer-events: none;
+  }
+
+  #winBanner{
+    position: absolute;
+    inset: 0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    font-size: clamp(20px, 6vw, 34px);
+    font-weight: 800;
+    color: var(--good);
+    text-align:center;
+    background: rgba(255,255,255,0.85);
+    z-index: 5;
+  }
+
+  #photoCredit{
+    margin-top: 3px;
+    font-size: 10px;
+    color: #99a;
+    text-align:center;
+    flex: 0 0 auto;
+  }
+
+  #pwaStatus{
+    margin-top: 1px;
+    font-size: 10px;
+    color: #789;
+    text-align:center;
+    flex: 0 0 auto;
+    min-height: 12px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Times Tables Pairs</h1>
+
+<div class="panel">
+  <h2>1. Choose how the question looks</h2>
+  <div class="row" id="operatorRow">
+    <button class="choice-btn" data-op="x">3 × 7 =</button>
+    <button class="choice-btn" data-op="q">? × 7 = 21</button>
+    <button class="choice-btn" data-op="divide">21 ÷ 7 =</button>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>2. Choose a times table</h2>
+  <div class="row" id="tableRow">
+    <button class="choice-btn table-btn" data-table="2">2</button>
+    <button class="choice-btn table-btn" data-table="3">3</button>
+    <button class="choice-btn table-btn" data-table="4">4</button>
+    <button class="choice-btn table-btn" data-table="5">5</button>
+    <button class="choice-btn table-btn" data-table="6">6</button>
+    <button class="choice-btn table-btn" data-table="7">7</button>
+    <button class="choice-btn table-btn" data-table="8">8</button>
+    <button class="choice-btn table-btn" data-table="9">9</button>
+    <button class="choice-btn table-btn" data-table="10">10</button>
+    <button class="choice-btn table-btn" data-table="11">11</button>
+    <button class="choice-btn table-btn" data-table="12">12</button>
+    <button class="choice-btn level-btn" data-level="level1">Level 1 (2,5,10)</button>
+    <button class="choice-btn level-btn" data-level="level2">Level 2 (3,4,8)</button>
+    <button class="choice-btn level-btn" data-level="level3">Level 3 (6,7,9,12)</button>
+  </div>
+</div>
+
+<div class="controls-bottom">
+  <button id="newGameBtn">New Game</button>
+  <span id="status">Pick your options, then press New Game</span>
+  <span id="hint"></span>
+</div>
+
+<div class="board-wrap">
+  <img class="reveal-img" id="revealImg" alt="">
+  <div class="grid" id="grid"></div>
+  <div id="winBanner">🎉 All matched! Great job! 🎉</div>
+</div>
+
+<div id="photoCredit"></div>
+<div id="pwaStatus"></div>
+
+<script>
+const TABLE_SETS = {
+  level1: [2,5,10],
+  level2: [3,4,8],
+  level3: [6,7,9,12]
+};
+
+const ANIMALS = [
+  { src: 'images/panda.jpg', alt: 'Baby panda cub', credit: 'Sheila Lau, public domain, via Wikimedia Commons' },
+  { src: 'images/bunny.jpg', alt: 'Baby rabbit', credit: 'Siddharth Patil, CC0, via Wikimedia Commons' },
+  { src: 'images/fox.jpg', alt: 'Young red fox', credit: 'CC0, via Wikimedia Commons' },
+  { src: 'images/kitten.jpg', alt: 'Curious kitten', credit: 'Dimitri Houtteman, CC0, via Wikimedia Commons' },
+  { src: 'images/puppy.jpg', alt: 'Puppy in leaves', credit: 'C. E. Price, public domain, via Wikimedia Commons' },
+  { src: 'images/piglet.jpg', alt: 'Piglet', credit: 'Petr Kratochvil, CC0, via Wikimedia Commons' },
+  { src: 'images/chick_duckling.jpg', alt: 'Chick and duckling', credit: 'CDC, public domain, via Wikimedia Commons' },
+  { src: 'images/lamb.jpg', alt: 'Lamb', credit: 'Virginie Moerenhout, CC BY 2.0, via Wikimedia Commons' },
+  { src: 'images/elephant.jpg', alt: 'Elephant calf with mother', credit: 'Tontan Travel, CC BY-SA 2.0, via Wikimedia Commons' },
+  { src: 'images/goat.jpg', alt: 'Young goat jumping', credit: 'Wilfredor, CC0, via Wikimedia Commons' },
+  { src: 'images/rat.jpg', alt: 'Young pet rat', credit: 'CC BY 2.0, via Wikimedia Commons' },
+  { src: 'images/hedgehog.jpg', alt: 'Young hedgehog', credit: 'CC BY-SA 3.0, via Wikimedia Commons' }
+];
+
+let selectedOperator = null;
+let selectedTableSet = null;
+let firstPick = null;
+let busy = false;
+let matchedCount = 0;
+
+function shuffle(arr){
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+document.getElementById('operatorRow').addEventListener('click', e => {
+  const btn = e.target.closest('.choice-btn');
+  if(!btn) return;
+  document.querySelectorAll('#operatorRow .choice-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedOperator = btn.dataset.op;
+});
+
+document.getElementById('tableRow').addEventListener('click', e => {
+  const btn = e.target.closest('.choice-btn');
+  if(!btn) return;
+  document.querySelectorAll('#tableRow .choice-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  if(btn.dataset.table){
+    selectedTableSet = [parseInt(btn.dataset.table, 10)];
+  } else {
+    selectedTableSet = TABLE_SETS[btn.dataset.level];
+  }
+});
+
+function buildFacts(tableSet, operator){
+  const candidates = [];
+  tableSet.forEach(table => {
+    for(let mult = 1; mult <= 12; mult++){
+      candidates.push({ table, mult, product: table * mult });
+    }
+  });
+  shuffle(candidates);
+  const used = new Set();
+  const chosen = [];
+  for(const c of candidates){
+    const answerVal = operator === 'x' ? c.product : c.mult;
+    if(used.has(answerVal)) continue;
+    used.add(answerVal);
+    chosen.push(c);
+    if(chosen.length === 12) break;
+  }
+  return chosen;
+}
+
+function factToCards(fact, operator, id){
+  const { table, mult, product } = fact;
+  let qText, aText;
+  if(operator === 'x'){
+    qText = `${mult} × ${table} =`;
+    aText = `${product}`;
+  } else if(operator === 'divide'){
+    qText = `${product} ÷ ${table} =`;
+    aText = `${mult}`;
+  } else {
+    qText = `? × ${table} = ${product}`;
+    aText = `${mult}`;
+  }
+  return [
+    { id, type: 'q', text: qText },
+    { id, type: 'a', text: aText }
+  ];
+}
+
+function setHint(msg){
+  document.getElementById('hint').textContent = msg;
+}
+
+function updateStatus(){
+  document.getElementById('status').textContent = `${matchedCount} of 12 pairs found`;
+}
+
+document.getElementById('newGameBtn').addEventListener('click', () => {
+  if(!selectedOperator){
+    setHint('Pick a question style (× / ÷ / ?) first!');
+    return;
+  }
+  if(!selectedTableSet){
+    setHint('Pick a times table or a level first!');
+    return;
+  }
+  setHint('');
+  startGame();
+});
+
+function startGame(){
+  firstPick = null;
+  busy = false;
+  matchedCount = 0;
+  document.getElementById('winBanner').style.display = 'none';
+  updateStatus();
+
+  const animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+  const img = document.getElementById('revealImg');
+  img.src = animal.src;
+  img.alt = animal.alt;
+  document.getElementById('photoCredit').textContent = `Photo: ${animal.alt} — ${animal.credit}`;
+
+  const facts = buildFacts(selectedTableSet, selectedOperator);
+  let cards = [];
+  facts.forEach((fact, i) => {
+    cards = cards.concat(factToCards(fact, selectedOperator, i));
+  });
+  shuffle(cards);
+
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  cards.forEach(cardData => {
+    const el = document.createElement('div');
+    el.className = `card ${cardData.type}`;
+    el.textContent = cardData.text;
+    el.addEventListener('click', () => onCardClick(el, cardData));
+    grid.appendChild(el);
+  });
+}
+
+function onCardClick(el, data){
+  if(busy) return;
+  if(el.classList.contains('matched') || el.classList.contains('selected')) return;
+
+  el.classList.add('selected');
+
+  if(!firstPick){
+    firstPick = { el, data };
+    return;
+  }
+
+  const second = { el, data };
+  busy = true;
+  const isMatch = firstPick.data.id === second.data.id && firstPick.data.type !== second.data.type;
+
+  if(isMatch){
+    setTimeout(() => {
+      firstPick.el.classList.remove('selected');
+      second.el.classList.remove('selected');
+      firstPick.el.classList.add('matched');
+      second.el.classList.add('matched');
+      matchedCount++;
+      updateStatus();
+      firstPick = null;
+      busy = false;
+      if(matchedCount === 12){
+        document.getElementById('winBanner').style.display = 'block';
+      }
+    }, 350);
+  } else {
+    firstPick.el.classList.add('wrong');
+    second.el.classList.add('wrong');
+    setTimeout(() => {
+      firstPick.el.classList.remove('selected', 'wrong');
+      second.el.classList.remove('selected', 'wrong');
+      firstPick = null;
+      busy = false;
+    }, 650);
+  }
+}
+
+if('serviceWorker' in navigator){
+  const pwaStatus = document.getElementById('pwaStatus');
+  navigator.serviceWorker.register('sw.js');
+  navigator.serviceWorker.addEventListener('message', evt => {
+    if(!evt.data) return;
+    if(evt.data.type === 'cache-progress'){
+      const { done, total } = evt.data;
+      if(done < total){
+        pwaStatus.textContent = `Downloading offline pack… ${done}/${total}`;
+      } else {
+        pwaStatus.textContent = 'Offline ready ✓';
+        setTimeout(() => { pwaStatus.textContent = ''; }, 3000);
+      }
+    }
+  });
+}
+</script>
+
+</body>
+</html>
